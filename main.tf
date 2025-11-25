@@ -34,25 +34,37 @@ resource "aws_s3_bucket" "site" {
   bucket = var.bucket_name
 }
 
+# Block public access
 resource "aws_s3_bucket_public_access_block" "public" {
   bucket                  = aws_s3_bucket.site.id
-  block_public_policy     = false
-  block_public_acls       = false
-  restrict_public_buckets = false
-  ignore_public_acls      = false
+  block_public_policy     = true
+  block_public_acls       = true
+  restrict_public_buckets = true
+  ignore_public_acls      = true
 }
 
-resource "aws_s3_bucket_policy" "public_policy" {
-  bucket = aws_s3_bucket.site.bucket
+# Allow CloudFront OAC to access bucket
+resource "aws_s3_bucket_policy" "bucket_policy" {
+  bucket = aws_s3_bucket.site.id
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [{
-      Effect    = "Allow"
-      Principal = "*"
-      Action    = "s3:GetObject"
-      Resource  = "${aws_s3_bucket.site.arn}/*"
-    }]
+    Statement = [
+      {
+        Sid       = "AllowCloudFrontRead"
+        Effect    = "Allow"
+        Principal = {
+          Service = "cloudfront.amazonaws.com"
+        }
+        Action   = "s3:GetObject"
+        Resource = "${aws_s3_bucket.site.arn}/*"
+        Condition = {
+          StringEquals = {
+            "AWS:SourceArn" = aws_cloudfront_distribution.cdn.arn
+          }
+        }
+      }
+    ]
   })
 }
 
@@ -60,7 +72,7 @@ resource "aws_s3_bucket_policy" "public_policy" {
 # Upload HTML file
 ########################################
 resource "aws_s3_object" "index" {
-  bucket       = aws_s3_bucket.site.bucket
+  bucket       = aws_s3_bucket.site.id
   key          = "index.html"
 
   content = <<EOF
@@ -77,7 +89,7 @@ EOF
 }
 
 ########################################
-# CloudFront CDN
+# CloudFront Origin Access Control (OAC)
 ########################################
 resource "aws_cloudfront_origin_access_control" "oac" {
   name                              = "s3-oac"
@@ -86,6 +98,9 @@ resource "aws_cloudfront_origin_access_control" "oac" {
   signing_protocol                  = "sigv4"
 }
 
+########################################
+# CloudFront Distribution
+########################################
 resource "aws_cloudfront_distribution" "cdn" {
   enabled = true
 
