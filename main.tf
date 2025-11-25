@@ -43,6 +43,10 @@ resource "aws_s3_bucket_public_access_block" "public" {
   restrict_public_buckets = false
 }
 
+data "aws_ivs_stream_key" "stream_key" {
+  channel_arn = aws_ivs_channel.live.arn
+}
+
 # Public bucket policy for index.html
 resource "aws_s3_bucket_policy" "public_policy" {
   bucket = aws_s3_bucket.site.id
