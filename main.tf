@@ -1,32 +1,3 @@
-terraform {
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = "~> 5.0"
-    }
-  }
-}
-
-provider "aws" {
-  region = var.region
-}
-
-########################################
-# IVS Channel
-########################################
-resource "aws_ivs_channel" "live" {
-  name         = "live-demo-channel"
-  latency_mode = "LOW"
-  type         = "BASIC"
-}
-
-########################################
-# IVS Stream Key (data)
-########################################
-data "aws_ivs_stream_key" "stream_key" {
-  channel_arn = aws_ivs_channel.live.arn
-}
-
 ########################################
 # S3 Bucket For HTML Video Player
 ########################################
@@ -34,31 +5,16 @@ resource "aws_s3_bucket" "site" {
   bucket = var.bucket_name
 }
 
+# Keep S3 fully private
 resource "aws_s3_bucket_public_access_block" "public" {
   bucket                  = aws_s3_bucket.site.id
-  block_public_policy     = false
-  block_public_acls       = false
-  restrict_public_buckets = false
-  ignore_public_acls      = false
+  block_public_policy     = true
+  block_public_acls       = true
+  restrict_public_buckets = true
+  ignore_public_acls      = true
 }
 
-resource "aws_s3_bucket_policy" "public_policy" {
-  bucket = aws_s3_bucket.site.bucket
-
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect    = "Allow"
-      Principal = "*"
-      Action    = "s3:GetObject"
-      Resource  = "${aws_s3_bucket.site.arn}/*"
-    }]
-  })
-}
-
-########################################
-# Upload HTML file
-########################################
+# Upload HTML
 resource "aws_s3_object" "index" {
   bucket       = aws_s3_bucket.site.bucket
   key          = "index.html"
@@ -77,7 +33,7 @@ EOF
 }
 
 ########################################
-# CloudFront CDN
+# CloudFront CDN + OAC (Private S3)
 ########################################
 resource "aws_cloudfront_origin_access_control" "oac" {
   name                              = "s3-oac"
@@ -119,3 +75,26 @@ resource "aws_cloudfront_distribution" "cdn" {
     cloudfront_default_certificate = true
   }
 }
+
+resource "aws_s3_bucket_policy" "oac_policy" {
+  bucket = aws_s3_bucket.site.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [{
+      Sid    = "AllowCloudFrontAccess"
+      Effect = "Allow"
+      Principal = {
+        Service = "cloudfront.amazonaws.com"
+      }
+      Action    = "s3:GetObject"
+      Resource  = "${aws_s3_bucket.site.arn}/*"
+      Condition = {
+        StringEquals = {
+          "AWS:SourceArn" = aws_cloudfront_distribution.cdn.arn
+        }
+      }
+    }]
+  })
+}
+
