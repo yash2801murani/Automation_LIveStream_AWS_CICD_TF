@@ -10,7 +10,7 @@ pipeline {
         stage('Checkout Repo') {
             steps {
                 git branch: 'main',
-                    url: 'https://github.com/YOUR_USER/YOUR_REPO.git'
+                    url: 'https://github.com/yash2801murani/Automation_LIveStream_AWS_CICD_TF.git'
             }
         }
 
