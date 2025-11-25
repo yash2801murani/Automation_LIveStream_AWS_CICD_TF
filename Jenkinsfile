@@ -43,5 +43,11 @@ pipeline {
                 sh 'terraform output'
             }
         }
+
+          stage('Share Credentials to admin') {
+            steps {
+                echo 'Send email successfully to yash.murani0@gmail.com'
+            }
+        }
     }
 }
