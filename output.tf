@@ -23,6 +23,10 @@
 
 
 
+output "ivs_ingest_server" {
+  value = "${aws_ivs_channel.live.ingest_endpoint}/app/"
+}
+
 output "ivs_ingest_url" {
   value = aws_ivs_channel.live.ingest_endpoint
 }
