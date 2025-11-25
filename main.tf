@@ -34,7 +34,7 @@ resource "aws_s3_bucket" "site" {
   bucket = var.bucket_name
 }
 
-# Allow public access via ACLs
+# Allow public bucket policy
 resource "aws_s3_bucket_public_access_block" "public" {
   bucket                  = aws_s3_bucket.site.id
   block_public_acls       = false
@@ -43,14 +43,30 @@ resource "aws_s3_bucket_public_access_block" "public" {
   restrict_public_buckets = false
 }
 
+# Public bucket policy for index.html
+resource "aws_s3_bucket_policy" "public_policy" {
+  bucket = aws_s3_bucket.site.id
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect    = "Allow"
+        Principal = "*"
+        Action    = "s3:GetObject"
+        Resource  = "${aws_s3_bucket.site.arn}/*"
+      }
+    ]
+  })
+}
+
 ########################################
-# Upload HTML file (public)
+# Upload HTML file (no ACL)
 ########################################
 resource "aws_s3_object" "index" {
   bucket       = aws_s3_bucket.site.id
   key          = "index.html"
   content_type = "text/html"
-  acl          = "public-read"
 
   content = <<EOF
 <!DOCTYPE html>
