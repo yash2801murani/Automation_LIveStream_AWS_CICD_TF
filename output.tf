@@ -6,15 +6,20 @@ output "ivs_playback_url" {
   value = aws_ivs_channel.live.playback_url
 }
 
+output "ivs_ingest_endpoint" {
+  value = aws_ivs_channel.live.ingest_endpoint
+}
+
 output "ivs_stream_key" {
-  value     = data.aws_ivs_stream_key.stream_key.value
-  sensitive = true
+  description = "Stream key (sensitive) - give to admin"
+  value       = aws_ivs_stream_key.key.value
+  sensitive   = true
 }
 
-output "s3_index_url" {
-  value = "http://${aws_s3_bucket.site.bucket}.s3.amazonaws.com/index.html"
+output "s3_website_bucket" {
+  value = aws_s3_bucket.site.bucket
 }
 
-output "cloudfront_url" {
-  value = "https://${aws_cloudfront_distribution.cdn.domain_name}"
+output "cloudfront_domain" {
+  value = aws_cloudfront_distribution.cdn.domain_name
 }
