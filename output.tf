@@ -14,3 +14,4 @@ output "ivs_stream_key" {
 output "s3_index_url" {
   value = "http://${aws_s3_bucket.site.bucket}.s3.amazonaws.com/index.html"
 }
+
