@@ -1,0 +1,24 @@
+pipeline {
+    agent any
+
+    environment {
+        TERRAFORM_DIR = "/var/lib/jenkins/workspace/IVS_Stream"
+    }
+
+    stages {
+        stage('Terraform Destroy') {
+            steps {
+                dir("${env.TERRAFORM_DIR}") {
+                    // Initialize Terraform
+                    sh 'terraform init'
+
+                    // Optional: Show what will be destroyed
+                    sh 'terraform plan -destroy -out=tfplan'
+
+                    // Destroy infrastructure automatically
+                    sh 'terraform destroy -auto-approve'
+                }
+            }
+        }
+    }
+}
